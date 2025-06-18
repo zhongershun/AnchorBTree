@@ -1,31 +1,36 @@
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-#SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-#SET (CMAKE_C_COMPILER "gcc")
-#SET (CMAKE_CXX_COMPILER "g++")
+# add_subdirectory(binder)
+# add_subdirectory(buffer)
+# add_subdirectory(catalog)
+# add_subdirectory(common)
+# add_subdirectory(concurrency)
+# add_subdirectory(container)
+# add_subdirectory(execution)
+# add_subdirectory(recovery)
+add_subdirectory(storage)
+# add_subdirectory(type)
+# add_subdirectory(planner)
+# add_subdirectory(primer)
+# add_subdirectory(optimizer)
 
-# set(CMAKE_CXX_COMPILER "/opt/rh/devtoolset-11/root/usr/bin/g++")
-# set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-set(CMAKE_CXX_COMPILER "/usr/local/bin/g++")
-SET (CMAKE_BUILD_TYPE "Debug")
-SET (CMAKE_CXX_FLAGS "-std=c++11 -Wno-deprecated-declarations" CACHE INTERNAL "compiler options" FORCE)
-SET (CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE INTERNAL "compiler options" FORCE)
-SET (CMAKE_CXX_FLAGS_RELEASE "-O0 -g" CACHE INTERNAL "compiler options" FORCE)
+add_library(daset STATIC ${ALL_OBJECT_FILES})
 
-list(APPEND EXTAR_INCLUDE_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/system 
-                                 ${CMAKE_CURRENT_SOURCE_DIR}/BTree
-                                 ${CMAKE_CURRENT_SOURCE_DIR}/AnchorBTree)
+set(DASET_LIBS
+        daset_storage_disk
+        # daset_storage_index
+        daset_storage_page
+        )
 
-file(GLOB_RECURSE SRC_FILES system/*.cpp
-                            AnchorBTree/*.cpp
-                            BTree/*.cpp
-                            util/*.cpp
-                            ./*.cpp)
+find_package(Threads REQUIRED)
 
-ADD_EXECUTABLE(AnchorBTree ${SRC_FILES})
+set(DASET_THIRDPARTY_LIBS
+        Threads::Threads
+        )
 
-target_include_directories(AnchorBTree PUBLIC ${EXTAR_INCLUDE_HEADER})
+target_link_libraries(
+        daset
+        ${DASET_LIBS}
+        ${DASET_THIRDPARTY_LIBS})
 
-# 动态链接库
-target_link_libraries(AnchorBTree pthread)
-target_link_libraries(AnchorBTree ibverbs)
+target_include_directories(
+        daset PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

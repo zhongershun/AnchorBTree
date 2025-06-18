@@ -1,33 +1,49 @@
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-#SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-#SET (CMAKE_C_COMPILER "gcc")
-#SET (CMAKE_CXX_COMPILER "g++")
+# CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 
-# set(CMAKE_CXX_COMPILER "/opt/rh/devtoolset-11/root/usr/bin/g++")
-# set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-set(CMAKE_CXX_COMPILER "/usr/local/bin/g++")
-SET (CMAKE_BUILD_TYPE "Debug")
-SET (CMAKE_CXX_FLAGS "-std=c++11 -Wno-deprecated-declarations" CACHE INTERNAL "compiler options" FORCE)
-SET (CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE INTERNAL "compiler options" FORCE)
-SET (CMAKE_CXX_FLAGS_RELEASE "-O0 -g" CACHE INTERNAL "compiler options" FORCE)
+include(GoogleTest)
 
-aux_source_directory (${PROJECT_SOURCE_DIR}/third_party/gtest GTEST_SRC)
+file(GLOB_RECURSE DASET_TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/*/*test.cpp")
 
-aux_source_directory (${PROJECT_SOURCE_DIR}/src/AnchorBTree BTreeAnchor_SRC)
-aux_source_directory (${PROJECT_SOURCE_DIR}/src/BTree BTreeAnchor_SRC)
-aux_source_directory (${PROJECT_SOURCE_DIR}/src/util BTreeAnchor_SRC)
+# #########################################
+# "make check-tests"
+# #########################################
+add_custom_target(build-tests COMMAND ${CMAKE_CTEST_COMMAND} --show-only)
+add_custom_target(check-tests COMMAND ${CMAKE_CTEST_COMMAND} --verbose)
+add_custom_target(check-public-ci-tests COMMAND ${CMAKE_CTEST_COMMAND} --verbose)
 
 
-add_executable(test_anchor test_anchor.cc ${GTEST_SRC} ${BTreeAnchor_SRC})
+# #########################################
+# "make XYZ_test"
+# #########################################
+foreach (daset_test_source ${DASET_TEST_SOURCES})
+    # Create a human readable name.
+    get_filename_component(daset_test_filename ${daset_test_source} NAME)
+    string(REPLACE ".cpp" "" daset_test_name ${daset_test_filename})
 
-target_link_libraries(test_anchor -pthread)
+    # Add the test target separately and as part of "make check-tests".
+    add_executable(${daset_test_name} EXCLUDE_FROM_ALL ${daset_test_source})
+#     add_backward(${daset_test_name})
+    add_dependencies(build-tests ${daset_test_name})
+    add_dependencies(check-tests ${daset_test_name})
 
-add_executable(test_node test_node.cc ${GTEST_SRC} ${BTreeAnchor_SRC})
+    gtest_discover_tests(${daset_test_name}
+            EXTRA_ARGS
+            --gtest_output=xml:${CMAKE_BINARY_DIR}/test/${daset_test_name}.xml
+            --gtest_catch_exceptions=0
+            DISCOVERY_TIMEOUT 120
+            PROPERTIES
+            TIMEOUT 120
+            )
 
-target_link_libraries(test_node -pthread)
+    target_link_libraries(${daset_test_name} daset gtest gmock_main)
 
+    # Set test target properties and dependencies.
+    set_target_properties(${daset_test_name}
+            PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+            COMMAND ${daset_test_name}
+            )
+endforeach ()
 
-add_executable(test_btree test_btree.cc ${GTEST_SRC} ${BTreeAnchor_SRC})
-
-target_link_libraries(test_btree -pthread)
+# add_dependencies(build-tests)
+# add_dependencies(check-tests)
