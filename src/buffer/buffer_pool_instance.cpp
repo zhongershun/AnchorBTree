@@ -132,6 +132,7 @@ auto BufferPoolInstance::WritePage(page_id_t page_id) -> WritePageGuard{
         // page in buffer pool
         frame_id = page_table_[page_id];
         frame_header = frames_[frame_id];
+        lock.unlock();
         return WritePageGuard(page_id,frame_id,frame_header,replacer_);
     }else{
         // page not in buffer pool
@@ -159,6 +160,7 @@ auto BufferPoolInstance::WritePage(page_id_t page_id) -> WritePageGuard{
         page_table_[page_id]=frame_id;
         frame_header->SetUsed();
         LoadFramePage(frame_header,page_id);
+        lock.unlock();
         return WritePageGuard(page_id,frame_id,frame_header,replacer_);
     }
 }
@@ -171,6 +173,7 @@ auto BufferPoolInstance::ReadPage(page_id_t page_id) -> ReadPageGuard{
         // page in buffer pool
         frame_id = page_table_[page_id];
         frame_header = frames_[frame_id];
+        lock.unlock();
         return ReadPageGuard(page_id,frame_id,frame_header,replacer_);
     }else{
         // page not in buffer pool
@@ -198,6 +201,7 @@ auto BufferPoolInstance::ReadPage(page_id_t page_id) -> ReadPageGuard{
         page_table_[page_id]=frame_id;
         frame_header->SetUsed();
         LoadFramePage(frame_header,page_id);
+        lock.unlock();
         return ReadPageGuard(page_id,frame_id,frame_header,replacer_);
     }
 }

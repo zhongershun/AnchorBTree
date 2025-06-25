@@ -49,6 +49,7 @@ TEST(BufferPoolManagerTest, VeryBasicTest) {
   }
 
   ASSERT_TRUE(bpm->DeletePage(pid));
+  remove(db_fname.c_str());
 }
 
 TEST(BufferPoolManagerTest, PagePinEasyTest) {
@@ -263,6 +264,7 @@ TEST(BufferPoolManagerTest, PageAccessTest) {
   }
 
   thread.join();
+  remove(db_fname.c_str());
 }
 
 TEST(BufferPoolManagerTest, ContentionTest) {
@@ -305,6 +307,7 @@ TEST(BufferPoolManagerTest, ContentionTest) {
   thread2.join();
   thread4.join();
   thread1.join();
+  remove(db_fname.c_str());
 }
 
 TEST(BufferPoolManagerTest, DeadlockTest) {
@@ -345,6 +348,7 @@ TEST(BufferPoolManagerTest, DeadlockTest) {
   guard0.Drop();
 
   child.join();
+  remove(db_fname.c_str());
 }
 
 // TEST(BufferPoolManagerTest, EvictableTest) {
