@@ -1,7 +1,8 @@
 add_library(
     daset_storage_page
     OBJECT
-    page.cpp
+    # page.cpp
+    page_guard.cpp
     )
 
 set(ALL_OBJECT_FILES

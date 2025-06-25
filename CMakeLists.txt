@@ -25,7 +25,7 @@ enable_testing()
 # Compiler flags.
 # set(CMAKE_C_COMPILER "/usr/bin/gcc")
 # set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wno-deprecated-declarations" CACHE INTERNAL "compiler options" FORCE)
+set(CMAKE_CXX_FLAGS "-std=c++17 -Wno-deprecated-declarations" CACHE INTERNAL "compiler options" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE INTERNAL "compiler options" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE INTERNAL "compiler options" FORCE)
 

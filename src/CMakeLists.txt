@@ -7,6 +7,8 @@
 # add_subdirectory(execution)
 # add_subdirectory(recovery)
 add_subdirectory(storage)
+add_subdirectory(util)
+add_subdirectory(buffer)
 # add_subdirectory(type)
 # add_subdirectory(planner)
 # add_subdirectory(primer)

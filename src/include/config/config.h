@@ -2,6 +2,7 @@
 #define SYSTEM_CONFIG_H_
 
 #include <cstdint>
+#include <cstddef>
 
 typedef uint64_t TableID;
 typedef uint64_t ColumnID;
@@ -43,5 +44,28 @@ enum RC {
 #define PAYLOAD_LEN    600
 #define KV_SIZE        (KEY_LEN+PAYLOAD_LEN)
 #define SAFE_SPACE     (10*KV_SIZE)      
+
+
+/**********************************/
+/************** Node **************/
+/**********************************/
+using frame_id_t = int32_t;    // frame id type
+using page_id_t = int32_t;     // page id type
+using byte = char;
+// typedef char byte;
+
+#define DASET_PAGE_SIZE         4096
+#define DASET_PAGECNT_INIT      16
+#define DASET_INVALID_PAGE_ID   (page_id_t)(-1)
+#define DASET_INVALID_FRAME_ID  (frame_id_t)(-1)
+
+
+
+
+
+/**********************************/
+/************ DEBUG INFO***********/
+/**********************************/
+#define DASET_DEBUG true
 
 #endif

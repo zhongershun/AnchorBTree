@@ -1,7 +1,7 @@
 #ifndef UTIL_DB_RW_LOCK_H_
 #define UTIL_DB_RW_LOCK_H_
 
-#include "system/config.h"
+#include "config/config.h"
 
 #include "pthread.h"
 
