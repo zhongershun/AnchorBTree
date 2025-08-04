@@ -61,6 +61,7 @@ inline auto BTreePage::getPageId() -> page_id_t{
 
 void BTreePage::setKey(int slodId, const byte* key, size_t key_len){
     memcpy(getKey(slodId),key,key_len);
+    memcpy(&(slot[slodId].key_),key,key_len);
 }
 
 auto BTreePage::spaceNeeded(size_t key_len, size_t payload_len) -> size_t{

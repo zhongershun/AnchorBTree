@@ -311,12 +311,19 @@ auto BTreeGeneric::InsertLeaf(const byte* key,const size_t key_len,const byte* t
     #if DASET_DEBUG
     if(comparator_(key,leaf->getKey(0))<0){
         // printf("Debug pause");
+        // only the node is the rightest node;
         LOG_DEBUG("To insert key lower than page key0");
     }
     #endif
     page_id_t leaf_pid = ctx.write_set_.back().GetPageID();
     if(!leaf->canInsert(key_len,tuple_len)){
         if(!ctx.IsRootPage(leaf_pid)){
+            if(comparator_(key,leaf->getKey(0))<0){
+                LOG_WARNING("Dangerous structure key to insert is less than slot[0].key");
+                // leaf must be the the rightest child of parent
+                auto parent_page = ctx.ParentPage();
+                parent_page->setKey(0,key,key_len);
+            }
             #if DASET_DEBUG
             std::string info_str = "";
             info_str += "original : [";
