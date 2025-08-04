@@ -6,7 +6,7 @@ PageGuard::PageGuard(page_id_t page_id, frame_id_t frame_id,
     std::shared_ptr<FrameHeader> frame, std::shared_ptr<LRUReplacer> replacer)
     :page_id_(page_id),frame_id_(frame_id),frame_(std::move(frame)),replacer_(replacer){
     is_valid_ = true;
-    replacer_->Pin(frame_id_);
+    // replacer_->Pin(frame_id_);
     frame_->AddPin();
 }
 
@@ -16,6 +16,7 @@ void ReadPageGuard::Drop(){
     }else{
         if(frame_->SubPin()==0){ // pin equals to 0, release the lock
             replacer_->Unpin(frame_id_);
+            frame_->SetUsed(false);
         }
     }
     is_valid_=false;
@@ -28,6 +29,7 @@ void WritePageGuard::Drop(){
     }else{
         if(frame_->SubPin()==0){ // pin equals to 0, release the lock
             replacer_->Unpin(frame_id_);
+            frame_->SetUsed(false);
         }
     }
     is_valid_=false;

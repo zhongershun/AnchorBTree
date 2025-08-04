@@ -1,10 +1,15 @@
 #include "buffer/lru_replacer.h"
 #include "gtest/gtest.h"
 #include <thread>
+#include "util/daset_debug_logger.h"
 
 namespace daset{
 
+static std::string test_log_file = "daset.log";
+
 TEST(LRUReplacerTest, SampleTest) {
+    DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+    DebugLogger::getInstance().setOutputFile(test_log_file);
     LRUReplacer lru_replacer(7);
 
     // Scenario: unpin six elements, i.e. add them to the replacer.
@@ -45,6 +50,8 @@ TEST(LRUReplacerTest, SampleTest) {
 }
 
 TEST(LRUReplacerTest, MultiThreadTest) {
+    DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+    DebugLogger::getInstance().setOutputFile(test_log_file);
     LRUReplacer lru_replacer(100);
     const int num_threads = 100;
     const int num_operations = 1000;

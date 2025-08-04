@@ -18,7 +18,7 @@ add_library(daset STATIC ${ALL_OBJECT_FILES})
 
 set(DASET_LIBS
         daset_storage_disk
-        # daset_storage_index
+        daset_storage_index
         daset_storage_page
         )
 

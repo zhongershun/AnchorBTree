@@ -4,6 +4,7 @@ add_library(
     db_rw_lock.cpp
     tuple.cpp
     thread_safe_queue.cpp
+    daset_debug_logger.cpp
     )
 
 set(ALL_OBJECT_FILES

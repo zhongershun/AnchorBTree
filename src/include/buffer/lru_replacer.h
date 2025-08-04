@@ -34,8 +34,9 @@ private:
         bool is_evictable_{false};
         uint64_t timestamp_;
     };
-    void MoveToFront(const std::shared_ptr<LRUNode>& node);
+    void AddToFront(const std::shared_ptr<LRUNode>& node);
     void RemoveNode(const std::shared_ptr<LRUNode>& node);
+    void MoveToFront(const std::shared_ptr<LRUNode>& node);
 
     size_t cnt_{0};
     size_t capcity_;

@@ -49,12 +49,20 @@ TEST_F(DiskManagerTest, DeletePageTest) {
 
   dm.ReadPage(0, buf);  // tolerate empty read
 
-  std::strncpy(data, "A test string.", sizeof(data));
   size_t pages_to_write = 100;
   for (page_id_t page_id = 0; page_id < static_cast<page_id_t>(pages_to_write); page_id++) {
+    // char* data_str= "A test string.";
+    // data_str += page_id;
+    char* originalStr = "A test string.";
+    size_t newSize = strlen(originalStr) + 11;
+    char* newStr = new char[newSize];
+    sprintf(newStr, "%s%d", originalStr, page_id);
+    
+    std::strncpy(data, newStr, sizeof(data));
     dm.WritePage(page_id, data);
     dm.ReadPage(page_id, buf);
     EXPECT_EQ(std::memcmp(buf, data, sizeof(buf)), 0);
+    delete[] newStr;
   }
 
   pages_to_write *= 2;

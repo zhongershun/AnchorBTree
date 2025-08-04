@@ -3,15 +3,18 @@
 #include "buffer/buffer_pool_instance.h"
 #include "storage/disk/disk_manager.h"
 #include "storage/page/page_guard.h"
-
+#include "util/daset_debug_logger.h"
 #include "gtest/gtest.h"
 
 namespace daset {
 
 const size_t FRAMES = 10;
 static std::string db_fname = "test.db";
+static std::string test_log_file = "daset.log";
 
 TEST(PageGuardTest, DropTest) {
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
   auto bpm = std::make_shared<BufferPoolInstance>(0,FRAMES, disk_manager.get());
 
@@ -102,6 +105,8 @@ TEST(PageGuardTest, DropTest) {
 }
 
 TEST(PageGuardTest, MoveTest) {
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
   auto bpm = std::make_shared<BufferPoolInstance>(0,FRAMES, disk_manager.get());
 

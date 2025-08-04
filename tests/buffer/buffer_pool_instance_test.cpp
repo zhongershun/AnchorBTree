@@ -6,10 +6,12 @@
 #include "storage/page/page_guard.h"
 #include "config/config.h"
 #include <thread>
+#include "util/daset_debug_logger.h"
 
 namespace daset {
 
 static std::string db_fname = "test.db";
+static std::string test_log_file = "daset.log";
 
 // The number of frames we give to the buffer pool.
 const size_t FRAMES = 10;
@@ -22,6 +24,8 @@ void CopyString(char *dest, const std::string &src) {
 
 TEST(BufferPoolManagerTest, VeryBasicTest) {
   // A very basic test.
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
 
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
   auto bpm = std::make_shared<BufferPoolInstance>(0, FRAMES, disk_manager.get());
@@ -53,6 +57,8 @@ TEST(BufferPoolManagerTest, VeryBasicTest) {
 }
 
 TEST(BufferPoolManagerTest, PagePinEasyTest) {
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
   auto bpm = std::make_shared<BufferPoolInstance>(0, 2, disk_manager.get());
 
@@ -150,6 +156,8 @@ TEST(BufferPoolManagerTest, PagePinEasyTest) {
 }
 
 TEST(BufferPoolManagerTest, PagePinMediumTest) {
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
   auto bpm = std::make_shared<BufferPoolInstance>(0,FRAMES, disk_manager.get());
 
@@ -229,6 +237,8 @@ TEST(BufferPoolManagerTest, PagePinMediumTest) {
 }
 
 TEST(BufferPoolManagerTest, PageAccessTest) {
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
   const size_t rounds = 50;
 
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
@@ -268,6 +278,8 @@ TEST(BufferPoolManagerTest, PageAccessTest) {
 }
 
 TEST(BufferPoolManagerTest, ContentionTest) {
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
   auto bpm = std::make_shared<BufferPoolInstance>(0 ,FRAMES, disk_manager.get());
 
@@ -311,6 +323,8 @@ TEST(BufferPoolManagerTest, ContentionTest) {
 }
 
 TEST(BufferPoolManagerTest, DeadlockTest) {
+  DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
+  DebugLogger::getInstance().setOutputFile(test_log_file);
   auto disk_manager = std::make_shared<DiskManager>(db_fname);
   auto bpm = std::make_shared<BufferPoolInstance>(0,FRAMES, disk_manager.get());
 

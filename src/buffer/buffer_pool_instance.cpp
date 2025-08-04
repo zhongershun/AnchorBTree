@@ -1,10 +1,10 @@
 #include "buffer/buffer_pool_instance.h"
-
+#include "util/daset_debug_logger.h"
 namespace daset{
 
 FrameHeader::FrameHeader(frame_id_t frame_id)
     :frame_id_(frame_id),page_id_(DASET_INVALID_PAGE_ID){
-    in_use_ = false;
+    in_use_ = true;
     is_dirty_ = false;
     pin_cnt_.store(0);
     data_ = new byte[DASET_PAGE_SIZE];
@@ -12,11 +12,12 @@ FrameHeader::FrameHeader(frame_id_t frame_id)
 }
 
 FrameHeader::~FrameHeader(){
-    delete data_;
+    delete[] data_;
 }
 
 void FrameHeader::Reset(){
-    in_use_ = false;
+    // in_use_ = false;
+    // SetUsed(false);
     is_dirty_ = false;
     pin_cnt_.store(0);
     memset(data_,0,DASET_PAGE_SIZE);
@@ -51,8 +52,8 @@ void FrameHeader::SetPageID(page_id_t page_id){
     page_id_ = page_id;
 }
 
-void FrameHeader::SetUsed(){
-    in_use_=true;
+void FrameHeader::SetUsed(bool used){
+    in_use_=used;
 }
 
 auto FrameHeader::GetPin() -> size_t{
@@ -100,12 +101,13 @@ auto BufferPoolInstance::NewPage() -> page_id_t{
         frame_header = frames_[frame_id];
     }
     // std::unique_lock<std::shared_mutex> frame_rw_lock(frame_header->rw_latch_);
-    if(frame_header->IsDirty()||frame_header->IsUsed()){
+    if(frame_header->IsDirty()){
         // Flush page/frame
         #if DASET_DEBUG==true
         page_id_t page_id = frame_header->GetPageID();
         if(page_id==DASET_INVALID_PAGE_ID){
-            printf("[Warring] : NewPage page id INVALID_PAGE_ID\n");
+            // printf("[Warring] : NewPage page id INVALID_PAGE_ID\n");
+            LOG_WARNING("NewPage page id INVALID_PAGE_ID");
         }
         #endif
         FlushFramePage(frame_header);
@@ -113,8 +115,8 @@ auto BufferPoolInstance::NewPage() -> page_id_t{
     frame_header->Reset();
     frame_header->SetPageID(next_page_id_);
     page_table_[new_page_id]=frame_id;
-    frame_header->SetUsed();
     replacer_->Unpin(frame_id);
+    frame_header->SetUsed(false);
     // frame_rw_lock.unlock();
     next_page_id_.fetch_add(1);
     return new_page_id;
@@ -132,6 +134,12 @@ auto BufferPoolInstance::WritePage(page_id_t page_id) -> WritePageGuard{
         // page in buffer pool
         frame_id = page_table_[page_id];
         frame_header = frames_[frame_id];
+        if(frame_header->IsUsed()){
+            // do nothing
+        }else{
+            replacer_->Pin(frame_id);
+            frame_header->SetUsed(true);
+        }
         lock.unlock();
         return WritePageGuard(page_id,frame_id,frame_header,replacer_);
     }else{
@@ -145,20 +153,22 @@ auto BufferPoolInstance::WritePage(page_id_t page_id) -> WritePageGuard{
             free_frames_.pop_back();
         }
         frame_header = frames_[frame_id];
-        if(frame_header->IsDirty()||frame_header->IsUsed()){
+        if(frame_header->IsDirty()){
             // Flush page/frame
             #if DASET_DEBUG==true
             page_id_t page_id_tmp = frame_header->GetPageID();
             if(page_id_tmp==DASET_INVALID_PAGE_ID){
-                printf("[Warring] : NewPage page id INVALID_PAGE_ID\n");
+                // printf("[Warring] : NewPage page id INVALID_PAGE_ID\n");
+                LOG_WARNING("NewPage page id INVALID_PAGE_ID");
             }
             #endif
             FlushFramePage(frame_header);
         }
+        // 无论是Evict还是从free中取出来的frame都不会在replace中有这个frame
         frame_header->Reset();
         frame_header->SetPageID(page_id);
         page_table_[page_id]=frame_id;
-        frame_header->SetUsed();
+        frame_header->SetUsed(true);
         LoadFramePage(frame_header,page_id);
         lock.unlock();
         return WritePageGuard(page_id,frame_id,frame_header,replacer_);
@@ -173,6 +183,12 @@ auto BufferPoolInstance::ReadPage(page_id_t page_id) -> ReadPageGuard{
         // page in buffer pool
         frame_id = page_table_[page_id];
         frame_header = frames_[frame_id];
+        if(frame_header->IsUsed()){
+            // do nothing
+        }else{
+            replacer_->Pin(frame_id);
+            frame_header->SetUsed(true);
+        }
         lock.unlock();
         return ReadPageGuard(page_id,frame_id,frame_header,replacer_);
     }else{
@@ -186,12 +202,13 @@ auto BufferPoolInstance::ReadPage(page_id_t page_id) -> ReadPageGuard{
             free_frames_.pop_back();
         }
         frame_header = frames_[frame_id];
-        if(frame_header->IsDirty()||frame_header->IsUsed()){
+        if(frame_header->IsDirty()){
             // Flush page/frame
             #if DASET_DEBUG==true
             page_id_t page_id_tmp = frame_header->GetPageID();
             if(page_id_tmp==DASET_INVALID_PAGE_ID){
-                printf("[Warring] : NewPage page id INVALID_PAGE_ID\n");
+                // printf("[Warring] : NewPage page id INVALID_PAGE_ID\n");
+                LOG_WARNING("NewPage page id INVALID_PAGE_ID");
             }
             #endif
             FlushFramePage(frame_header);
@@ -199,7 +216,7 @@ auto BufferPoolInstance::ReadPage(page_id_t page_id) -> ReadPageGuard{
         frame_header->Reset();
         frame_header->SetPageID(page_id);
         page_table_[page_id]=frame_id;
-        frame_header->SetUsed();
+        frame_header->SetUsed(true);
         LoadFramePage(frame_header,page_id);
         lock.unlock();
         return ReadPageGuard(page_id,frame_id,frame_header,replacer_);
@@ -215,10 +232,15 @@ auto BufferPoolInstance::DeletePage(page_id_t page_id) -> bool{
         frame_id = page_table_[page_id];
         frame_header = frames_[frame_id];
         if(frame_header->GetPin()>0){
+            LOG_ERROR("DeletePage the frame is still in used, page_id : "+std::to_string(page_id)+", frame_id : "+std::to_string(frame_id));
+            #if DASET_DEBUG
+            while (true){}
+            #endif
             return false;
         }else{
             FlushFramePage(frame_header);
             replacer_->Unpin(frame_id);
+            frame_header->SetUsed(false);
             free_frames_.push_back(frame_id);
         }
     }
@@ -233,7 +255,8 @@ auto BufferPoolInstance::GetPinCount(page_id_t page_id) -> size_t{
         auto frame_header = frames_[frame_id];
         return frame_header->GetPin();
     }else{
-        printf("[Warring] : GetPinCount page is not in buffer pool\n");
+        // printf("[Warring] : GetPinCount page is not in buffer pool\n");
+        LOG_WARNING("GetPinCount page is not in buffer pool, page_id : "+std::to_string(page_id));
         return 0;
     }
 }
@@ -244,12 +267,14 @@ auto BufferPoolInstance::GetPinCount(page_id_t page_id) -> size_t{
 auto BufferPoolInstance::FlushPage(page_id_t page_id) -> bool {
     std::unique_lock<std::mutex> lock(latch_);
     if(page_table_.find(page_id)==page_table_.end()){
-        printf("[Warring] : FlushPage page is not in buffer pool\n");
+        // printf("[Warring] : FlushPage page is not in buffer pool\n");
+        LOG_WARNING("FlushPage page is not in buffer pool, page_id : "+std::to_string(page_id));
         return false;
     }else{
         frame_id_t frame_id = page_table_[page_id];
         auto frame_header = frames_[frame_id];
         replacer_->Unpin(frame_id);
+        frame_header->SetUsed(false);
         auto promise_future = disk_scheduler_->CreatePromise();
         disk_scheduler_->Scheduler(DiskRequest(PAGE_WRITE,page_id,std::move(promise_future.first),frame_header->GetDataMut()));   
         return true;
@@ -265,6 +290,7 @@ auto BufferPoolInstance::FlushAllPage() -> bool {
         frame_id_t frame_id = it.second;
         auto frame_header = frames_[frame_id];
         replacer_->Unpin(frame_id);
+        frame_header->SetUsed(false);
         auto promise_future = disk_scheduler_->CreatePromise();
         disk_scheduler_->Scheduler(DiskRequest(PAGE_WRITE,page_id,std::move(promise_future.first),frame_header->GetDataMut()));   
     }
@@ -275,10 +301,10 @@ auto BufferPoolInstance::FlushAllPage() -> bool {
 /// @param frame 
 /// @return 
 auto BufferPoolInstance::FlushFramePage(std::shared_ptr<FrameHeader> frame) -> bool {
-    #if DASET_DEBUG
-    assert(frame->IsDirty()||frame->IsUsed());
+    // #if DASET_DEBUG == true
+    // assert(frame->IsDirty()||frame->IsUsed());
     // assert(frame->IsUsed()==true);
-    #endif
+    // #endif
     page_id_t page_id = frame->GetPageID();
     if(frame->IsDirty()){
         auto promise_future = disk_scheduler_->CreatePromise();

@@ -23,7 +23,7 @@ public:
 
 class DiskScheduler{
 public:
-    DiskScheduler(DiskManager* disk_manager, size_t schduler_workers = 4);
+    DiskScheduler(DiskManager* disk_manager, size_t schduler_workers = DASET_DISK_SCHEDULE_CNT);
     ~DiskScheduler();
 
     void Scheduler(DiskRequest r);

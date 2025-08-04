@@ -16,7 +16,7 @@ public:
     DiskManager() = default;
     DiskManager(const std::string &db_file);
 
-    ~DiskManager() = default;
+    ~DiskManager();
 
     void Shutdown();
     

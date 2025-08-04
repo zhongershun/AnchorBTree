@@ -25,7 +25,7 @@ public:
     auto GetPageID() -> page_id_t;
     auto GetFrameID() -> frame_id_t;
     void SetPageID(page_id_t page_id);
-    void SetUsed();
+    void SetUsed(bool used);
     auto GetPin() -> size_t;
 
     auto AddPin() -> size_t;

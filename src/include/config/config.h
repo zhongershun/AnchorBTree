@@ -54,12 +54,15 @@ using page_id_t = int32_t;     // page id type
 using byte = char;
 // typedef char byte;
 
-#define DASET_PAGE_SIZE         4096
+#define DASET_PAGE_SIZE         256
 #define DASET_PAGECNT_INIT      16
 #define DASET_INVALID_PAGE_ID   (page_id_t)(-1)
 #define DASET_INVALID_FRAME_ID  (frame_id_t)(-1)
-
-
+#define DASET_SPLIT_FACTOR      90
+#define DASET_MERGE_FACTOR      45
+// TODO 超过这个长度的外部页面存储
+#define DASET_LONG_PAYLOAD_LEN  16
+#define DASET_DISK_SCHEDULE_CNT 1
 
 
 
