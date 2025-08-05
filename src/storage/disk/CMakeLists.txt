@@ -2,6 +2,7 @@ add_library(
     daset_storage_disk 
     OBJECT
     disk_manager.cpp
+    disk_manager_mem.cpp
     disk_scheduler.cpp
     )
 

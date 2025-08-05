@@ -2,6 +2,7 @@
 #define STORAGE_DISK_SCHEDULER_H_
 
 #include "storage/disk/disk_manager.h"
+#include "storage/disk/disk_manager_mem.h"
 #include "util/thread_safe_queue.h"
 // #include "util/thread_safe_queue.cpp"
 #include "config/config.h"

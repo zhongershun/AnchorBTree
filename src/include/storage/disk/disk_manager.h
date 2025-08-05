@@ -18,11 +18,11 @@ public:
 
     ~DiskManager();
 
-    void Shutdown();
+    virtual void Shutdown();
     
-    void WritePage(page_id_t page_id, const byte* page_data);
-    void ReadPage(page_id_t page_id, byte* page_data);
-    void DeletePage(page_id_t page_id);
+    virtual void WritePage(page_id_t page_id, const byte* page_data);
+    virtual void ReadPage(page_id_t page_id, byte* page_data);
+    virtual void DeletePage(page_id_t page_id);
     
 private:
     auto ResizeFile(size_t newSize) -> bool;

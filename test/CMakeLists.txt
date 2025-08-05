@@ -2,7 +2,7 @@
 
 include(GoogleTest)
 
-file(GLOB_RECURSE DASET_TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/*/*test.cpp")
+file(GLOB_RECURSE DASET_TEST_SOURCES "${PROJECT_SOURCE_DIR}/test/*/*test.cpp")
 
 # #########################################
 # "make check-tests"

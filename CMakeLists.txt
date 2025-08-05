@@ -52,6 +52,6 @@ include_directories(BEFORE src) # This is needed for gtest.
 
 add_subdirectory(third_party)
 add_subdirectory(src)
-add_subdirectory(tests)
+add_subdirectory(test)
 
 add_dependencies(gtest daset)

@@ -312,14 +312,14 @@ auto BTreeGeneric::InsertLeaf(const byte* key,const size_t key_len,const byte* t
     if(comparator_(key,leaf->getKey(0))<0){
         // printf("Debug pause");
         // only the node is the rightest node;
-        LOG_DEBUG("To insert key lower than page key0");
+        LOG_WARNING("To insert key lower than page key0");
     }
     #endif
     page_id_t leaf_pid = ctx.write_set_.back().GetPageID();
     if(!leaf->canInsert(key_len,tuple_len)){
         if(!ctx.IsRootPage(leaf_pid)){
             if(comparator_(key,leaf->getKey(0))<0){
-                LOG_WARNING("Dangerous structure key to insert is less than slot[0].key");
+                LOG_WARNING("Dangerous structure key to insert is less than slot[0].key from leaf");
                 // leaf must be the the rightest child of parent
                 auto parent_page = ctx.ParentPage();
                 parent_page->setKey(0,key,key_len);
@@ -408,6 +408,12 @@ auto BTreeGeneric::InsertInner(const byte* key,const size_t key_len,const byte* 
     auto target_pid = ctx.write_set_.back().GetPageID();
     if(!target->canInsert(key_len,tuple_len)){
         if(!ctx.IsRootPage(target_pid)){
+            if(comparator_(key,target->getKey(0))<0){
+                LOG_WARNING("Dangerous structure key to insert is less than slot[0].key from inner");
+                // leaf must be the the rightest child of parent
+                auto parent_page = ctx.ParentPage();
+                parent_page->setKey(0,key,key_len);
+            }
             page_id_t right_pid =  bpm_->NewPage();
             auto right_guard = bpm_->WritePage(right_pid);
             auto right_page = right_guard.AsMut<BTreePage>();
