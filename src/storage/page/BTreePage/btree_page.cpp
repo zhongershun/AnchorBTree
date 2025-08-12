@@ -168,7 +168,7 @@ auto BTreePage::search(const byte* key, size_t key_len, byte* payload, size_t pa
         }
     }else if(compator(key,getKey(slotId))==0){
         // payload = getPayload(slotId);
-        memcpy(payload,getPayload(slotId),sizeof(page_id_t));
+        memcpy(payload,getPayload(slotId),getPayloadLen(slotId));
         payload_len = getPayloadLen(slotId);
     }else{
         if(page_type_==IndexPageType::LEAF_PAGE){

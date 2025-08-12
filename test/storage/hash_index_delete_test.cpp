@@ -6,13 +6,13 @@
 
 #include "buffer/buffer_pool_instance.h"
 #include "gtest/gtest.h"
-// #include "storage/disk/disk_manager.h"
-#include "storage/index/BTree/btree_generic.h"
+#include "storage/disk/disk_manager.h"
+#include "storage/index/Hash/hash_generic.h"
 #include "util/daset_debug_logger.h"
 
 namespace daset {
 
-bool TreeValuesMatch(BTreeGeneric &tree, std::vector<page_key_t> &inserted,
+bool TreeValuesMatch(HashGeneric &tree, std::vector<page_key_t> &inserted,
                      std::vector<page_key_t> &deleted) {
   // std::vector<KeyValue> rids;
   // KeyType index_key;
@@ -40,21 +40,26 @@ bool TreeValuesMatch(BTreeGeneric &tree, std::vector<page_key_t> &inserted,
   return true;
 }
 
+
+static std::string db_fname = "test.db";
+
 const size_t FRAMES = 50;
 
 static std::string test_log_file = "daset.log";
 
-TEST(BPlusTreeTests, DeleteTestNoIterator) {
+TEST(HashTreeTests, DeleteTestNoIterator) {
   DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
   DebugLogger::getInstance().setOutputFile(test_log_file);
+  remove(db_fname.c_str());
   TableID tid = 0;  
-  auto disk_manager = std::make_unique<DiskManagerMem>();
+  auto disk_manager = std::make_unique<DiskManager>(db_fname);
   auto *bpm = new BufferPoolInstance(0, FRAMES, disk_manager.get());
   // allocate header_page
   page_id_t page_id = bpm->NewPage();
   // create b+ tree
   PageKeyCompator comparator;
-  BTreeGeneric tree(tid,page_id,bpm,comparator);
+  size_t bucket_cnt = 10;
+  HashGeneric tree(tid,page_id,bpm,comparator,bucket_cnt);
 
   std::vector<page_key_t> keys = {1, 2, 3, 4, 5};
   for (auto key : keys) {
@@ -92,24 +97,26 @@ TEST(BPlusTreeTests, DeleteTestNoIterator) {
   // Remove the remaining key
   page_key_t key = 2;
   tree.Remove(reinterpret_cast<byte*>(&key),DASET_PAGE_KEY_LEN);
-  auto root_page_id = tree.GetRootPageId();
-  ASSERT_EQ(root_page_id, DASET_INVALID_PAGE_ID);
+  // auto root_page_id = tree.GetRootPageId();
+  // ASSERT_EQ(root_page_id, DASET_INVALID_PAGE_ID);
   delete value;
   delete bpm;
 }
 
-TEST(BPlusTreeTests, SequentialEdgeMixTest) {  // NOLINT
+TEST(HashTreeTests, SequentialEdgeMixTest) {  // NOLINT
   DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
   DebugLogger::getInstance().setOutputFile(test_log_file);
+  remove(db_fname.c_str());
   TableID tid = 0;  
-  auto disk_manager = std::make_unique<DiskManagerMem>();
+  auto disk_manager = std::make_unique<DiskManager>(db_fname);
   auto *bpm = new BufferPoolInstance(0, FRAMES, disk_manager.get());
 
     page_id_t page_id = bpm->NewPage();
     PageKeyCompator comparator;
-    BTreeGeneric tree(tid,page_id,bpm,comparator);
+    size_t bucket_cnt_ = 40;
+    HashGeneric tree(tid,page_id,bpm,comparator,bucket_cnt_);
 
-    std::vector<page_key_t> keys = {1, 5, 15, 20, 25, 2, -1, -2, 6, 14, 4};
+    std::vector<page_key_t> keys = {1, 5, 15, 20, 25, 2, 11, 22, 6, 14, 4};
     std::vector<page_key_t> inserted = {};
     std::vector<page_key_t> deleted = {};
     for (auto key : keys) {
@@ -119,7 +126,7 @@ TEST(BPlusTreeTests, SequentialEdgeMixTest) {  // NOLINT
       auto res = TreeValuesMatch(tree, inserted, deleted);
       ASSERT_TRUE(res);
     }
-
+    tree.PrintfAllLeaf();
     page_key_t tmp_key = 1;
     tree.Remove(reinterpret_cast<byte*>(&tmp_key),DASET_PAGE_KEY_LEN);
     deleted.push_back(1);
@@ -134,7 +141,7 @@ TEST(BPlusTreeTests, SequentialEdgeMixTest) {  // NOLINT
     res = TreeValuesMatch(tree, inserted, deleted);
     ASSERT_TRUE(res);
 
-    keys = {4, 14, 6, 2, 15, -2, -1, 3, 5, 25, 20};
+    keys = {4, 14, 6, 2, 15, 22, 11, 3, 5, 25, 20};
     for (auto key : keys) {
       // index_key.SetFromInteger(key);
       tree.Remove(reinterpret_cast<byte*>(&key),DASET_PAGE_KEY_LEN);
@@ -144,6 +151,7 @@ TEST(BPlusTreeTests, SequentialEdgeMixTest) {  // NOLINT
       ASSERT_TRUE(res);
     }
   // }
+  remove(db_fname.c_str());
   delete bpm;
 }
 
@@ -153,7 +161,7 @@ std::vector<page_key_t> generateRandomUniqueKeys(size_t n) {
     std::unordered_set<page_key_t> unique_keys;
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<page_key_t> dist(1, n * 2); // 确保足够大的范围避免重复
+    std::uniform_int_distribution<page_key_t> dist(1, n*2); // 确保足够大的范围避免重复
 
     while (unique_keys.size() < n) {
         page_key_t key = dist(gen);
@@ -169,16 +177,18 @@ std::vector<page_key_t> generateRandomUniqueKeys(size_t n) {
     return keys;
 }
 
-TEST(BPlusTreeTests, DeleteSingleTest) {  // NOLINT
+TEST(HashTreeTests, DeleteSingleTest) {  // NOLINT
   DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
   DebugLogger::getInstance().setOutputFile(test_log_file);
+  remove(db_fname.c_str());
   TableID tid = 0;  
-  auto disk_manager = std::make_unique<DiskManagerMem>();
+  auto disk_manager = std::make_unique<DiskManager>(db_fname);
   auto *bpm = new BufferPoolInstance(0, FRAMES, disk_manager.get());
 
     page_id_t page_id = bpm->NewPage();
     PageKeyCompator comparator;
-    BTreeGeneric tree(tid,page_id,bpm,comparator);
+    size_t bucket_cnt = 40;
+    HashGeneric tree(tid,page_id,bpm,comparator,bucket_cnt);
 
     // std::vector<page_key_t> keys = generateRandomUniqueKeys(20);
     std::vector<page_key_t> keys = {22, 6, 32, 19, 31, 24, 28, 4, 13, 1, 5, 14, 10, 3, 35, 8, 17, 36, 9, 33};
@@ -220,24 +230,27 @@ TEST(BPlusTreeTests, DeleteSingleTest) {  // NOLINT
     }
   // }
   tree.PrintfAllLeaf();
+  remove(db_fname.c_str());
   delete bpm;
 }
 
 
-TEST(BPlusTreeTests, ConcurrentDeleteTest) {  // NOLINT
+TEST(HashTreeTests, ConcurrentDeleteTest) {  // NOLINT
   DebugLogger::getInstance().setLevel(DebugLogger::Level::DEBUG);
   DebugLogger::getInstance().setOutputFile(test_log_file);
+  remove(db_fname.c_str());
   TableID tid = 0;  
-  auto disk_manager = std::make_unique<DiskManagerMem>();
+  auto disk_manager = std::make_unique<DiskManager>(db_fname);
   auto *bpm = new BufferPoolInstance(0, FRAMES, disk_manager.get());
 
   page_id_t page_id = bpm->NewPage();
   PageKeyCompator comparator;
-  BTreeGeneric tree(tid,page_id,bpm,comparator);
+  size_t bucket_cnt = 800;
+  HashGeneric tree(tid,page_id,bpm,comparator,bucket_cnt);
 
   // 1. 先串行插入一批数据
-  const int num_threads = 4;         // 线程数
-  const int keys_per_thread = 5;   // 每个线程插入的键数
+  const int num_threads = 10;         // 线程数
+  const int keys_per_thread = 20;   // 每个线程插入的键数
   const int total_keys = (num_threads * keys_per_thread)*2;
   // 用于收集所有插入的键
   // std::vector<page_key_t> all_keys;
@@ -273,7 +286,7 @@ TEST(BPlusTreeTests, ConcurrentDeleteTest) {  // NOLINT
             deleted.push_back(key);
             inserted.erase(std::find(inserted.begin(), inserted.end(), key));
             auto res = TreeValuesMatch(tree, inserted, deleted);
-            tree.PrintfAllLeaf();
+            // tree.PrintfAllLeaf();
         }
     }
   };
@@ -288,6 +301,7 @@ TEST(BPlusTreeTests, ConcurrentDeleteTest) {  // NOLINT
   }
   // 清理
   tree.PrintfAllLeaf();   // 调试用
+  remove(db_fname.c_str());
   delete bpm;
 }
 

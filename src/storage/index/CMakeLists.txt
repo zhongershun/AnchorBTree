@@ -3,6 +3,7 @@ add_library(
     OBJECT
     index.cpp
     BTree/btree_generic.cpp
+    Hash/hash_generic.cpp
     )
 # add_subdirectory(AnchorPage)
 # add_subdirectory(BTree)

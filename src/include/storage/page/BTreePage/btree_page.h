@@ -3,30 +3,31 @@
 
 #include "config/config.h"
 #include <cstring>
+#include "util/page_key_compator.h"
 
 namespace daset{
 
-using page_key_t = int64_t;
-#define DASET_PAGE_KEY_LEN sizeof(page_key_t)
+// using page_key_t = int64_t;
+// #define DASET_PAGE_KEY_LEN sizeof(page_key_t)
 
 enum class IndexPageType { INVALID_INDEX_PAGE = 0, INNER_PAGE, LEAF_PAGE};
 
-class PageKeyCompator{
-public:
-    auto operator()(const byte* lhs, const byte* rhs) const -> int{
-        page_key_t lhs_value;
-        memcpy(&lhs_value,lhs,DASET_PAGE_KEY_LEN);
-        page_key_t rhs_value;
-        memcpy(&rhs_value,rhs,DASET_PAGE_KEY_LEN);
-        if(lhs_value<rhs_value){
-            return -1;
-        }else if(lhs_value==rhs_value){
-            return 0;
-        }else{
-            return 1;
-        }
-    }
-};
+// class PageKeyCompator{
+// public:
+//     auto operator()(const byte* lhs, const byte* rhs) const -> int{
+//         page_key_t lhs_value;
+//         memcpy(&lhs_value,lhs,DASET_PAGE_KEY_LEN);
+//         page_key_t rhs_value;
+//         memcpy(&rhs_value,rhs,DASET_PAGE_KEY_LEN);
+//         if(lhs_value<rhs_value){
+//             return -1;
+//         }else if(lhs_value==rhs_value){
+//             return 0;
+//         }else{
+//             return 1;
+//         }
+//     }
+// };
 
 class BTreePageHeader{
 public:

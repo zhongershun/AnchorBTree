@@ -4,6 +4,7 @@ add_library(
     # page.cpp
     page_guard.cpp
     BTreePage/btree_page.cpp
+    HashPage/hash_page.cpp
     )
 
 # add_subdirectory(BTreePage)
