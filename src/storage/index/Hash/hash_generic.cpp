@@ -20,7 +20,7 @@ HashGeneric::HashGeneric(TableID table_id, page_id_t schema_page_id,
         }else{
             cur_page_id = bpm_->NewPage();
         }
-        cur_page->next_page_id_ = cur_page_id;
+        cur_page->right_page_id_ = cur_page_id;
     }
     WritePageGuard guard = bpm_->WritePage(schema_page_id_);
     auto root_page = guard.AsMut<HashSchemaPage>();
@@ -65,10 +65,11 @@ auto HashGeneric::Search(const byte* key,const size_t key_len, byte*& payload, s
     {
         auto page_guard = bpm_->ReadPage(cur_page_id);
         auto page = page_guard.As<BucketPage>();
-        if(comparator_(page->getKey(0),key)==0){
-            return page->search(key,key_len,payload,payload_len,comparator_);
+        if(page->search(key,key_len,payload,payload_len,comparator_)){
+            return true;
+        }else{
+            cur_page_id = page->next_page_id_;
         }
-        cur_page_id = page->next_page_id_;
     }
     return false;
 }
@@ -78,9 +79,26 @@ auto HashGeneric::Insert(const byte* key,const size_t key_len,const byte* tuple,
     memcpy(&indexKey,key,key_len);
     size_t bkt_idx = HashFunc(indexKey);
     page_id_t cur_page_id = buckets_[bkt_idx];
-    auto page_guard = bpm_->WritePage(cur_page_id);
-    auto page = page_guard.AsMut<BucketPage>();
-    return page->insert(key,key_len,tuple,tuple_len,comparator_);
+    while (true)
+    {
+        auto page_guard = bpm_->WritePage(cur_page_id);
+        auto page = page_guard.AsMut<BucketPage>();
+        if(page->canInsert(key_len,tuple_len)){
+            return page->insert(key,key_len,tuple,tuple_len,comparator_);
+        }
+        if(page->next_page_id_!=DASET_INVALID_PAGE_ID){
+            cur_page_id = page->next_page_id_;
+        }else{
+            cur_page_id = bpm_->NewPage();
+            {
+                auto cur_page_guard = bpm_->WritePage(cur_page_id);
+                auto cur_page = cur_page_guard.AsMut<BucketPage>();
+                cur_page->init(cur_page_id);
+            }
+            page->next_page_id_ = cur_page_id;
+        }
+    }
+    return false;
 }
 
 auto HashGeneric::Remove(const byte* key,const size_t key_len) -> bool{
@@ -88,9 +106,17 @@ auto HashGeneric::Remove(const byte* key,const size_t key_len) -> bool{
     memcpy(&indexKey,key,key_len);
     size_t bkt_idx = HashFunc(indexKey);
     page_id_t cur_page_id = buckets_[bkt_idx];
-    auto page_guard = bpm_->WritePage(cur_page_id);
-    auto page = page_guard.AsMut<BucketPage>();
-    return page->remove(key,key_len,comparator_);
+    while (cur_page_id!=DASET_INVALID_PAGE_ID)
+    {
+        auto page_guard = bpm_->WritePage(cur_page_id);
+        auto page = page_guard.AsMut<BucketPage>();
+        if(page->remove(key,key_len,comparator_)){
+            return true;
+        }else{
+            cur_page_id = page->next_page_id_;    
+        }
+    }
+    return false;
 }
 
 #if DASET_DEBUG
@@ -100,29 +126,36 @@ void HashGeneric::PrintfAllLeaf(){
     // auto leaf = GetFirstPage();
     for (size_t i = 0; i < bucket_cnt_; i++)
     {
-        info_str = "";
-        info_str += "page id :";
-        info_str += std::to_string(buckets_[i]);
-        info_str += " [";
-        auto page_guard = bpm_->ReadPage(buckets_[i]);
-        auto page = page_guard.As<BucketPage>();
-        for (size_t i = 0; i < page->node_cnt_; i++)
+        info_str = "bucket ";
+        info_str += std::to_string(i);
+        info_str += " : ";
+        page_id_t cur_page_id=buckets_[i];
+        while (cur_page_id!=DASET_INVALID_PAGE_ID)
         {
-            page_key_t key;
-            memcpy(&key,page->getKey(i),sizeof(page_key_t));
-            // printf("%d ",key);
-            info_str += std::to_string(key);
-            info_str += " ";
+            info_str += "page id :";
+            info_str += std::to_string(cur_page_id);
+            info_str += " [";
+            auto page_guard = bpm_->ReadPage(cur_page_id);
+            auto page = page_guard.As<BucketPage>();
+            for (size_t i = 0; i < page->count_; i++)
+            {
+                page_key_t key;
+                memcpy(&key,page->getKey(i),sizeof(page_key_t));
+                // printf("%d ",key);
+                info_str += std::to_string(key);
+                info_str += " ";
+            }
+            // page_id_t next_page_id = page->next_page_id_;
+            // if(next_page_id!=DASET_INVALID_PAGE_ID){
+            //     auto next_leaf_guard = bpm_->ReadPage(next_page_id);
+            //     leaf = next_leaf_guard.As<BucketPage>();
+            // }else{
+            //     leaf = nullptr;
+            // }
+            // printf("]\n");
+            info_str += "] ";
+            cur_page_id = page->next_page_id_;
         }
-        page_id_t next_page_id = page->next_page_id_;
-        // if(next_page_id!=DASET_INVALID_PAGE_ID){
-        //     auto next_leaf_guard = bpm_->ReadPage(next_page_id);
-        //     leaf = next_leaf_guard.As<BucketPage>();
-        // }else{
-        //     leaf = nullptr;
-        // }
-        // printf("]\n");
-        info_str += "]";
         LOG_DEBUG(info_str);
     }
     

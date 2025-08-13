@@ -20,29 +20,33 @@ namespace daset{
 
 class BucketPageHeader{
 public:
-    page_id_t   page_id_;
-    page_id_t   next_page_id_;
-    size_t      node_cnt_;
+    page_id_t   page_id_{DASET_INVALID_PAGE_ID};
+    page_id_t   right_page_id_{DASET_INVALID_PAGE_ID};
+    page_id_t   next_page_id_{DASET_INVALID_PAGE_ID};
+    size_t      count_{0};
     // page_key_t  key_;
     bool        is_pk_;
     size_t      free_space_;
     size_t      data_offset_ = static_cast<size_t>(DASET_PAGE_SIZE);
     BucketPageHeader(){
         page_id_ = DASET_INVALID_PAGE_ID;
+        right_page_id_ = DASET_INVALID_PAGE_ID;
         next_page_id_ = DASET_INVALID_PAGE_ID;
-        node_cnt_ = 0;
+        count_ = 0;
         is_pk_ = true;
 
     }
     BucketPageHeader(page_id_t page_id){
         page_id_ = page_id;
+        right_page_id_ = DASET_INVALID_PAGE_ID;
         next_page_id_ = DASET_INVALID_PAGE_ID;
-        node_cnt_ = 0;
+        count_ = 0;
         is_pk_ = true;
     }
 };
 
 struct __attribute__((packed)) HashSlot {
+    bool        re_use_{false};
     size_t      offset_;
     size_t      key_len_;
     size_t      payload_len_;
@@ -61,6 +65,7 @@ public:
 
 
     void init(page_id_t page_id);
+    void reset();
     inline auto ptr() -> byte*;
     inline auto ptr() const -> const byte*;
     inline auto getKey(int slotId) -> byte*;
@@ -78,6 +83,9 @@ public:
 
     auto search(const byte* key, size_t key_len, byte* payload, size_t payload_len, const PageKeyCompator& compator) -> bool;
     auto search(const byte* key, size_t key_len, byte* payload, size_t payload_len, const PageKeyCompator& compator) const -> bool;
+
+    auto reuseSlot(size_t key_len, size_t payload_len) -> int;
+    auto canInsert(size_t key_len, size_t payload_len) -> bool;
 
     auto insert(const byte* key, size_t key_len, const byte* payload, size_t payload_len, const PageKeyCompator& compator) -> bool;
     auto remove(const byte* key, size_t key_len, const PageKeyCompator& compator) -> bool;

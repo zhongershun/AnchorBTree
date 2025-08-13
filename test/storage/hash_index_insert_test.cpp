@@ -15,7 +15,7 @@ namespace daset {
 static std::string db_fname = "testdb.txt";
 static std::string test_log_file = "daset.log";
 
-const size_t FRAMES = 100;
+const size_t FRAMES = 1000;
 // const size_t bucket_cnt = 500;
 
 
@@ -52,7 +52,7 @@ TEST(HashTreeTests, InsertTest1NoIterator) {
   page_id_t page_id = bpm->NewPage();
   // create b+ tree
   PageKeyCompator comparator;
-  size_t bucket_cnt = 50;
+  size_t bucket_cnt = 5;
   HashGeneric tree(tid,page_id,bpm,comparator,bucket_cnt);
   tree.PrintfAllLeaf();
 
@@ -95,7 +95,7 @@ TEST(HashTreeTests, InsertTestDesc) {
   page_id_t page_id = bpm->NewPage();
   // create b+ tree
   PageKeyCompator comparator;
-  size_t bucket_cnt = 50;
+  size_t bucket_cnt = 5;
   HashGeneric tree(tid,page_id,bpm,comparator,bucket_cnt);
 
   int insert_cnt = 10;
@@ -135,7 +135,7 @@ TEST(HashTreeTests, ConcurrentInsertTest) {
     auto *bpm = new BufferPoolInstance(0, FRAMES, disk_manager.get());
     page_id_t page_id = bpm->NewPage();
     PageKeyCompator comparator;
-    size_t bucket_cnt = 500;
+    size_t bucket_cnt = 10;
     HashGeneric tree(tid, page_id, bpm, comparator,bucket_cnt);
 
     // 1. 先串行插入一批数据
@@ -194,7 +194,7 @@ TEST(HashTreeTests, ConcurrentInsertTest) {
     }
 
     sleep(1);
-    // tree.PrintfAllLeaf();
+    tree.PrintfAllLeaf();
     // 验证所有键都能被正确检索
     byte* value = new byte[sizeof(uint64_t)];
     size_t value_len;

@@ -1,7 +1,7 @@
 # add_subdirectory(binder)
 # add_subdirectory(buffer)
 # add_subdirectory(catalog)
-# add_subdirectory(common)
+add_subdirectory(common)
 # add_subdirectory(concurrency)
 # add_subdirectory(container)
 # add_subdirectory(execution)
@@ -20,6 +20,7 @@ set(DASET_LIBS
         daset_storage_disk
         daset_storage_index
         daset_storage_page
+        daset_storage_field
         )
 
 find_package(Threads REQUIRED)
